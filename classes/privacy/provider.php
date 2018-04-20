@@ -15,18 +15,32 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'tool_health', language 'en', branch 'MOODLE_22_STABLE'
+ * Privacy Subsystem implementation for tool_health.
  *
- * @package    tool
- * @subpackage health
- * @copyright  2011 Petr Skoda
+ * @package    tool_health
+ * @copyright  2018 Zig Tan <zig@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['healthnoproblemsfound'] = 'No health problems were found!';
-$string['healthproblemsdetected'] = 'Health problems detected!';
-$string['healthproblemsolution'] = 'Health problem solution';
-$string['healthreturntomain'] = 'Continue';
-$string['healthsolution'] = 'Solution';
-$string['pluginname'] = 'Health center';
-$string['privacy:metadata'] = 'The Health center plugin does not store any personal data.';
+namespace tool_health\privacy;
+
+defined('MOODLE_INTERNAL') || die();
+
+/**
+ * Privacy Subsystem for tool_health implementing null_provider.
+ *
+ * @copyright  2018 Zig Tan <zig@moodle.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class provider implements \core_privacy\local\metadata\null_provider {
+
+    /**
+     * Get the language string identifier with the component's language
+     * file to explain why this plugin stores no data.
+     *
+     * @return  string
+     */
+    public static function get_reason() : string {
+        return 'privacy:metadata';
+    }
+}
