@@ -434,43 +434,6 @@ class problem_000012 extends problem_base {
     }
 }
 
-class problem_000013 extends problem_base {
-    function title() {
-        return 'Multi-answer questions data consistency';
-    }
-    function exists() {
-        global $DB;
-        $positionexpr = $DB->sql_position($DB->sql_concat("','", "q.id", "','"),
-                $DB->sql_concat("','", "qma.sequence", "','"));
-        return $DB->record_exists_sql("
-                SELECT * FROM {question} q
-                    JOIN {question_multianswer} qma ON $positionexpr > 0
-                WHERE qma.question <> q.parent") ||
-            $DB->record_exists_sql("
-                SELECT * FROM {question} q
-                    JOIN {question} parent_q ON parent_q.id = q.parent
-                WHERE q.category <> parent_q.category");
-    }
-    function severity() {
-        return SEVERITY_ANNOYANCE;
-    }
-    function description() {
-        return '<p>For each sub-question whose id is listed in ' .
-        'question_multianswer.sequence, its question.parent field should equal ' .
-        'question_multianswer.question; and each sub-question should be in the same ' .
-        'category as its parent. There are questions in your database for ' .
-        'which this is not the case. One way that this could have happened is ' .
-        'for multi-answer questions restored from backup before ' .
-        '<a href="http://tracker.moodle.org/browse/MDL-14750">MDL-14750</a> was fixed.</p>';
-    }
-    function solution() {
-        return '<p>Upgrade to Moodle 1.9.1 or later, or manually execute the ' .
-        'code in question_multianswer_fix_subquestion_parents_and_categories in ' .
-        '<a href="http://cvs.moodle.org/moodle/question/type/multianswer/db/upgrade.php?revision=1.1.10.2&amp;view=markup">/question/type/multianswer/db/upgrade.php' .
-        'from the 1.9 stable branch</a>.</p>';
-    }
-}
-
 class problem_000014 extends problem_base {
     function title() {
         return 'Only multianswer and random questions should be the parent of another question';
@@ -493,54 +456,6 @@ class problem_000014 extends problem_base {
         return '<p>It is impossible to give a solution without knowing more about ' .
         ' how the problem was caused. You may be able to get help from the ' .
         '<a href="http://moodle.org/mod/forum/view.php?f=121">Quiz forum</a>.</p>';
-    }
-}
-
-class problem_000015 extends problem_base {
-    function title() {
-        return 'Question categories should belong to a valid context';
-    }
-    function exists() {
-        global $DB;
-        return $DB->record_exists_sql("
-            SELECT qc.*, (SELECT COUNT(1) FROM {question} q WHERE q.category = qc.id) AS numquestions
-            FROM {question_categories} qc
-                LEFT JOIN {context} con ON qc.contextid = con.id
-            WHERE con.id IS NULL");
-    }
-    function severity() {
-        return SEVERITY_ANNOYANCE;
-    }
-    function description() {
-        global $DB;
-        $problemcategories = $DB->get_records_sql("
-            SELECT qc.id, qc.name, qc.contextid, (SELECT COUNT(1) FROM {question} q WHERE q.category = qc.id) AS numquestions
-            FROM {question_categories} qc
-                LEFT JOIN {context} con ON qc.contextid = con.id
-            WHERE con.id IS NULL
-            ORDER BY numquestions DESC, qc.name");
-        $table = '<table><thead><tr><th>Cat id</th><th>Category name</th>' .
-        "<th>Context id</th><th>Num Questions</th></tr></thead><tbody>\n";
-        foreach ($problemcategories as $cat) {
-            $table .= "<tr><td>$cat->id</td><td>" . s($cat->name) . "</td><td>" .
-            $cat->contextid ."</td><td>$cat->numquestions</td></tr>\n";
-        }
-        $table .= '</tbody></table>';
-        return '<p>All question categories are linked to a context id, and, ' .
-        'the context they are linked to must exist. The following categories ' .
-        'belong to a non-existant category:</p>' . $table . '<p>Any of these ' .
-        'categories that contain no questions can just be deleted form the database. ' .
-        'Other categories will require more thought.</p>';
-    }
-    function solution() {
-        global $CFG;
-        return '<p>You can delete the empty categories by executing the following SQL:</p><pre>
-DELETE FROM ' . $CFG->prefix . 'question_categories
-WHERE
-    NOT EXISTS (SELECT * FROM ' . $CFG->prefix . 'question q WHERE q.category = ' . $CFG->prefix . 'question_categories.id)
-AND NOT EXISTS (SELECT * FROM ' . $CFG->prefix . 'context con WHERE contextid = con.id)
-        </pre><p>Any remaining categories that contain questions will require more thought. ' .
-        'People in the <a href="http://moodle.org/mod/forum/view.php?f=121">Quiz forum</a> may be able to help.</p>';
     }
 }
 
